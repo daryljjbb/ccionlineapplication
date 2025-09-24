@@ -1,0 +1,90 @@
+{% extends 'webapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Customer Search</h2>
+        <a href="{% url 'create_customer' %}" class="btn btn-danger">
+            <i class="bi bi-plus-circle"></i> Create New Customer
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="mb-3">
+                <input type="text" id="customerSearchInput" class="form-control" placeholder="Search by name or email...">
+            </div>
+
+            <div id="customer-list-container" class="list-group">
+                <!-- Customer list will be populated by JavaScript -->
+            </div>
+
+            <div id="no-results" class="text-center p-4" style="display: none;">
+                <p>No customers found in the database.</p>
+                <a href="{% url 'create_customer' %}" class="btn btn-danger">Create the First Customer</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('customerSearchInput');
+    const customerListContainer = document.getElementById('customer-list-container');
+    const noResultsDiv = document.getElementById('no-results');
+    let customers = [];
+
+    // Fetch all customers on page load
+    fetch("{% url 'customer_search' %}", {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        customers = data;
+        if (customers.length === 0) {
+            noResultsDiv.style.display = 'block';
+            searchInput.style.display = 'none';
+        } else {
+            renderCustomers(customers);
+        }
+    });
+
+    function renderCustomers(customerData) {
+        customerListContainer.innerHTML = '';
+        if (customerData.length === 0) {
+            customerListContainer.innerHTML = '<p class="text-center text-muted">No matching customers found.</p>';
+            return;
+        }
+
+        customerData.forEach(customer => {
+            const statusColors = { active: 'success', inactive: 'secondary', prospect: 'warning' };
+            const statusColor = statusColors[customer.status] || 'light';
+            const detailUrl = "{% url 'customer_detail' 0 %}".replace('0', customer.id);
+            const customerHtml = `
+                <a href="${detailUrl}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">${customer.first_name} ${customer.last_name}</h5>
+                        <small>${customer.email}</small>
+                    </div>
+                    <span class="badge rounded-pill bg-${statusColor}">${customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}</span>
+                </a>
+            `;
+            customerListContainer.insertAdjacentHTML('beforeend', customerHtml);
+        });
+    }
+
+    searchInput.addEventListener('keyup', function () {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filteredCustomers = customers.filter(customer => {
+            const fullName = `${customer.first_name} ${customer.last_name}`.toLowerCase();
+            const email = customer.email.toLowerCase();
+            return fullName.includes(searchTerm) || email.includes(searchTerm);
+        });
+        renderCustomers(filteredCustomers);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'webapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Customer Info Card -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3>Customer Information</h3>
+                    <a href="{% url 'edit_customer' customer.id %}" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-pencil-square"></i> Edit
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Full Name</dt>
+                                <dd class="col-sm-8">{{ customer.first_name }} {{ customer.last_name }}</dd>
+
+                                <dt class="col-sm-4">Email</dt>
+                                <dd class="col-sm-8">{{ customer.email }}</dd>
+
+                                <dt class="col-sm-4">Phone</dt>
+                                <dd class="col-sm-8">{{ customer.phone_number|default:"N/A" }}</dd>
+
+                                <dt class="col-sm-4">Address</dt>
+                                <dd class="col-sm-8">{{ customer.address|default:"N/A"|linebreaksbr }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Status</dt>
+                                <dd class="col-sm-8"><span class="badge bg-primary">{{ customer.get_status_display }}</span></dd>
+
+                                <dt class="col-sm-4">Source</dt>
+                                <dd class="col-sm-8">{{ customer.get_source_display }}</dd>
+
+                                <dt class="col-sm-4">Customer Since</dt>
+                                <dd class="col-sm-8">{{ customer.created_at|date:"M d, Y" }}</dd>
+
+                                <dt class="col-sm-4">Last Updated</dt>
+                                <dd class="col-sm-8">{{ customer.updated_at|date:"M d, Y" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <!-- Sticky Note Card -->
+            <div class="card bg-warning-subtle mb-4 h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-sticky"></i> Customer Note</h5>
+                </div>
+                <div class="card-body">
+                    {% if customer.notes %}
+                        <p class="card-text" style="white-space: pre-wrap;">{{ customer.notes }}</p>
+                    {% else %}
+                        <p class="card-text text-muted fst-italic">No notes for this customer. <a href="{% url 'edit_customer' customer.id %}">Add one.</a></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <!-- Tabs for Policies, Invoices, Suspense -->
+    <ul class="nav nav-tabs" id="customerTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="policies-tab" data-bs-toggle="tab" data-bs-target="#policies" type="button" role="tab" aria-controls="policies" aria-selected="true">Policies ({{ policies.count }})</button>
+        </li>
+       
+    </ul>
+    </div>
+    <div class="tab-content" id="customerTabContent">
+        <!-- Policies Tab -->
+        <div class="tab-pane fade show active" id="policies" role="tabpanel" aria-labelledby="policies-tab">
+            <div class="card card-body border-top-0">
+                <div class="d-flex justify-content-end mb-3">
+                    <a href="{% url 'select_policy_type' customer.id %}" class="btn btn-danger"><i class="bi bi-plus-circle"></i> Add New Policy</a>
+                </div>
+                {% if policies %}
+                    <div class="list-group">
+                        {% for policy in policies %}
+                            <a href="{% url 'policy_detail' policy.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Policy #{{ policy.policy_number }}</h5>
+                                    <small>{{ policy.get_status_display }}</small>
+                                </div>
+                                <p class="mb-1">
+                                    Carrier: {{ policy.carrier.name|default:"N/A" }} | Type: {{ policy.get_policy_type_display }} | Total Premium: ${{ policy.total_premium }}
+                                </p>
+                                <small>Effective: {{ policy.effective_date|date:"M d, Y" }} - Exp: {{ policy.expiration_date|date:"M d, Y" }}</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted">No policies found for this customer.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+
+    
+</div>
+{% endblock %}
+

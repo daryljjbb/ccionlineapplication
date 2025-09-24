@@ -1,0 +1,187 @@
+{% extends 'webapp/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <form method="post" id="home-policy-form">
+        {% csrf_token %}
+        <h3>{% if policy %}Edit{% else %}Create{% endif %} Homeowners Policy for {{ customer }}</h3>
+        <hr>
+
+        <!-- General Policy Information -->
+        <div class="card mb-4">
+            <div class="card-header">General Policy Information</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">{{ form.carrier.label_tag }} {{ form.carrier }}</div>
+                    <div class="col-md-4 mb-3">{{ form.policy_number.label_tag }} {{ form.policy_number }}</div>
+                    <div class="col-md-4 mb-3">{{ form.status.label_tag }} {{ form.status }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">{{ form.effective_date.label_tag }} {{ form.effective_date }}</div>
+                    <div class="col-md-6 mb-3">{{ form.expiration_date.label_tag }} {{ form.expiration_date }}</div>
+                </div>
+                <div class="row justify-content-end">
+                    <div class="col-md-3 mb-3">
+                        <label for="premium-amount-input" class="form-label">Carrier Premium</label>
+                        <div class="input-group"><span class="input-group-text">$</span>{{ form.premium_amount }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        {{ form.agency_fee.label_tag }}
+                        <div class="input-group"><span class="input-group-text">$</span>{{ form.agency_fee }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="total-customer-cost" class="form-label">Total Customer Cost</label>
+                        <div class="input-group"><span class="input-group-text">$</span><input type="text" id="total-customer-cost" class="form-control" readonly></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Homeowners Details -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">Property Information</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="property_address" class="form-label">Property Address</label>
+                            <textarea name="property_address" id="property_address" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6 mb-3">
+                                <label for="year_built" class="form-label">Year Built</label>
+                                <input type="number" name="year_built" id="year_built" class="form-control">
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <label for="square_footage" class="form-label">Square Footage</label>
+                                <input type="number" name="square_footage" id="square_footage" class="form-control">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6 mb-3">
+                                <label for="deductible" class="form-label">All Peril Deductible</label>
+                                <input type="text" name="deductible" id="deductible" class="form-control" value="$1,000">
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <label for="wind_deductible" class="form-label">Wind/Hurricane Deductible</label>
+                                <input type="text" name="wind_deductible" id="wind_deductible" class="form-control" value="2%">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">Coverages</div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <thead><tr><th>Coverage</th><th>Limit</th><th>Premium</th></tr></thead>
+                            <tbody>
+                                {% with '' as placeholder %}
+                                <tr>
+                                    <td>A - Dwelling</td>
+                                    <td><input type="text" name="dwelling_limit" class="form-control form-control-sm" placeholder="{{ placeholder }}"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="dwelling_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="0.00"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>B - Other Structures</td>
+                                    <td><input type="text" name="other_structures_limit" class="form-control form-control-sm" placeholder="{{ placeholder }}"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="other_structures_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="0.00"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>C - Personal Property</td>
+                                    <td><input type="text" name="personal_property_limit" class="form-control form-control-sm" placeholder="{{ placeholder }}"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="personal_property_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="0.00"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>D - Loss of Use</td>
+                                    <td><input type="text" name="loss_of_use_limit" class="form-control form-control-sm" placeholder="{{ placeholder }}"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="loss_of_use_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="0.00"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>E - Personal Liability</td>
+                                    <td><input type="text" name="personal_liability_limit" class="form-control form-control-sm" value="$300,000"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="personal_liability_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="0.00"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>F - Medical Payments</td>
+                                    <td><input type="text" name="medical_payments_limit" class="form-control form-control-sm" value="$5,000"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="medical_payments_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="0.00"></div></td>
+                                </tr>
+                                {% endwith %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+            <a href="{% if policy %}{% url 'policy_detail' policy.id %}{% else %}{% url 'customer_detail' customer.id %}{% endif %}" class="btn btn-secondary me-2">Cancel</a>
+            <button type="submit" class="btn btn-danger">{% if policy %}Save Changes{% else %}Create Policy{% endif %}</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('home-policy-form');
+    const policyDetails = JSON.parse('{{ policy_details_json|default:"{}"|safe }}');
+
+    function populateForm() {
+        if (!policyDetails || Object.keys(policyDetails).length === 0) {
+            // If creating, pre-fill address from customer
+            form.querySelector('[name="property_address"]').value = '{{ customer.address|escapejs }}';
+            return;
+        }
+
+        // Populate simple fields
+        form.querySelector('[name="property_address"]').value = policyDetails.property_address || '{{ customer.address|escapejs }}';
+        form.querySelector('[name="year_built"]').value = policyDetails.year_built || '';
+        form.querySelector('[name="square_footage"]').value = policyDetails.square_footage || '';
+        form.querySelector('[name="deductible"]').value = policyDetails.deductible || '$1,000';
+        form.querySelector('[name="wind_deductible"]').value = policyDetails.wind_deductible || '2%';
+
+        // Populate coverages
+        if (policyDetails.coverages) {
+            for (const [key, value] of Object.entries(policyDetails.coverages)) {
+                const limitInput = form.querySelector(`[name="${key}_limit"]`);
+                const premiumInput = form.querySelector(`[name="${key}_premium"]`);
+                if (limitInput && value) limitInput.value = value.limit || '';
+                if (premiumInput && value) premiumInput.value = value.premium || '0.00';
+            }
+        }
+    }
+
+    function updateTotalPremium() {
+        let coverageTotal = 0;
+        form.querySelectorAll('.coverage-premium').forEach(input => {
+            const value = parseFloat(input.value);
+            if (!isNaN(value)) {
+                coverageTotal += value;
+            }
+        });
+
+        const premiumInput = document.getElementById('premium-amount-input');
+        premiumInput.value = coverageTotal.toFixed(2);
+
+        const agencyFeeInput = document.getElementById('agency-fee-input');
+        const agencyFee = parseFloat(agencyFeeInput.value) || 0;
+
+        const totalCustomerCost = coverageTotal + agencyFee;
+        document.getElementById('total-customer-cost').value = totalCustomerCost.toFixed(2);
+    }
+
+    // Listen for changes in any premium input or the agency fee
+    form.addEventListener('input', function(e) {
+        if (e.target && (e.target.classList.contains('coverage-premium') || e.target.id === 'agency-fee-input')) {
+            updateTotalPremium();
+        }
+    });
+
+    // Populate form for edit mode, then initialize totals
+    populateForm();
+    updateTotalPremium();
+});
+</script>
+{% endblock %}

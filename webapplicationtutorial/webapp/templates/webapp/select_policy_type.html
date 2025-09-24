@@ -1,0 +1,28 @@
+{% extends 'webapp/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="text-center">
+        <h2>Create New Policy for {{ customer }}</h2>
+        <p class="lead">Please select the type of policy you would like to create.</p>
+    </div>
+
+    <div class="row justify-content-center mt-4">
+        {% for type_id, type_name in policy_types %}
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center d-flex flex-column">
+                    <h5 class="card-title">{{ type_name }}</h5>
+                    <p class="card-text">Create a new {{ type_name|lower }} insurance policy.</p>
+                    <div class="mt-auto">
+                        <a href="{% url 'create_policy' customer.id type_id %}" class="btn btn-danger">
+                            Create {{ type_name }} Policy
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

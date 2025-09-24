@@ -1,0 +1,141 @@
+{% extends 'webapp/base.html' %}
+{% load webapp_extras %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- General Policy Info Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Policy #{{ policy.policy_number }}</h3>
+            <a href="{% url 'edit_policy' policy.id %}" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-pencil-square"></i> Edit Policy
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">Customer</dt>
+                        <dd class="col-sm-8"><a href="{% url 'customer_detail' policy.customer.id %}">{{ policy.customer }}</a></dd>
+
+                        <dt class="col-sm-4">Carrier</dt>
+                        <dd class="col-sm-8">{{ policy.carrier.name|default:"N/A" }}</dd>
+
+                        <dt class="col-sm-4">Policy Type</dt>
+                        <dd class="col-sm-8">{{ policy.get_policy_type_display }}</dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8"><span class="badge bg-primary">{{ policy.get_status_display }}</span></dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-5">Effective Date</dt>
+                        <dd class="col-sm-7">{{ policy.effective_date|date:"M d, Y" }}</dd>
+
+                        <dt class="col-sm-5">Expiration Date</dt>
+                        <dd class="col-sm-7">{{ policy.expiration_date|date:"M d, Y" }}</dd>
+
+                        <dt class="col-sm-5">Carrier Premium</dt>
+                        <dd class="col-sm-7">${{ policy.premium_amount|floatformat:2 }}</dd>
+
+                        <dt class="col-sm-5">Agency Fee</dt>
+                        <dd class="col-sm-7">${{ policy.agency_fee|floatformat:2 }}</dd>
+
+                        <dt class="col-sm-5 fw-bold">Total Premium</dt>
+                        <dd class="col-sm-7 fw-bold">${{ policy.total_premium|floatformat:2 }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Policy Type Specific Details -->
+    {% if policy.policy_type == 'auto' and policy.details.vehicles %}
+        <h4>Vehicles on Policy</h4>
+        {% for vehicle in policy.details.vehicles %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <strong>{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</strong> (VIN: {{ vehicle.vin }})
+                </div>
+                <div class="card-body">
+                    <h5>Coverages</h5>
+                    {% if vehicle.coverages %}
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Coverage</th>
+                                    <th>Limit</th>
+                                    <th class="text-end">Premium</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for coverage in vehicle.coverages %}
+                                <tr>
+                                    <td>{{ coverage.name }}</td>
+                                    <td>{{ coverage.limit }}</td>
+                                    <td class="text-end">${{ coverage.premium|default:"0.00" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-muted">No coverages listed for this vehicle.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% elif policy.policy_type == 'home' and policy.details %}
+        <h4>Property & Coverage Details</h4>
+        <div class="card mb-4">
+            <div class="row g-0">
+                <div class="col-md-6 border-end">
+                    <div class="card-body">
+                        <h5 class="card-title">Property Information</h5>
+                        <dl class="row mt-3">
+                            <dt class="col-sm-5">Property Address</dt>
+                            <dd class="col-sm-7">{{ policy.details.property_address|default:"N/A" }}</dd>
+                            <dt class="col-sm-5">Year Built</dt>
+                            <dd class="col-sm-7">{{ policy.details.year_built|default:"N/A" }}</dd>
+                            <dt class="col-sm-5">Square Footage</dt>
+                            <dd class="col-sm-7">{{ policy.details.square_footage|default:"N/A" }} sq ft</dd>
+                            <dt class="col-sm-5">All Peril Deductible</dt>
+                            <dd class="col-sm-7">{{ policy.details.deductible|default:"N/A" }}</dd>
+                            <dt class="col-sm-5">Wind/Hurricane Deductible</dt>
+                            <dd class="col-sm-7">{{ policy.details.wind_deductible|default:"N/A" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card-body">
+                        <h5 class="card-title">Coverages</h5>
+                        {% if policy.details.coverages %}
+                            <table class="table table-sm table-striped mt-3">
+                                <thead><tr><th>Coverage</th><th>Limit</th><th class="text-end">Premium</th></tr></thead>
+                                <tbody>
+                                    {% for key, value in policy.details.coverages.items %}
+                                    <tr>
+                                        <td>{{ key|replace:"_, " | title }}</td>
+                                        <td>{{ value.limit|default:"-" }}</td>
+                                        <td class="text-end">${{ value.premium|default:"0.00" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p class="text-muted">No coverages listed.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body">
+                <p class="text-muted">No specific details available for this policy type.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

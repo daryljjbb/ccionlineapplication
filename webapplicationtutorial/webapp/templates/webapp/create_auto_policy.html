@@ -1,0 +1,257 @@
+{% extends 'webapp/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <form method="post" id="auto-policy-form">
+        {% csrf_token %}
+        <h3>Create Auto Policy for {{ customer }}</h3>
+        <hr>
+
+        <!-- General Policy Information -->
+        <div class="card mb-4">
+            <div class="card-header">General Policy Information</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">{{ form.carrier.label_tag }} {{ form.carrier }}</div>
+                    <div class="col-md-4 mb-3">{{ form.policy_number.label_tag }} {{ form.policy_number }}</div>
+                    <div class="col-md-4 mb-3">{{ form.status.label_tag }} {{ form.status }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">{{ form.effective_date.label_tag }} {{ form.effective_date }}</div>
+                    <div class="col-md-6 mb-3">{{ form.expiration_date.label_tag }} {{ form.expiration_date }}</div>
+                </div>
+                <div class="row justify-content-end">
+                    <div class="col-md-3 mb-3">
+                        <label for="premium-amount-input" class="form-label">Carrier Premium</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.premium_amount }}
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        {{ form.agency_fee.label_tag }}
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.agency_fee }}
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="total-customer-cost" class="form-label">Total Customer Cost</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" id="total-customer-cost" class="form-control" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicles Section -->
+        <div id="vehicles-container">
+            <!-- Dynamic vehicles will be added here -->
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-secondary" id="add-vehicle-btn"><i class="bi bi-plus-circle"></i> Add Vehicle</button>
+            <button type="submit" class="btn btn-danger">Create Policy</button>
+        </div>
+    </form>
+</div>
+
+<!-- Template for a single vehicle card -->
+<template id="vehicle-template">
+    <div class="card mb-4 vehicle-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Vehicle Information</span>
+            <button type="button" class="btn-close remove-vehicle-btn" aria-label="Close"></button>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Year</label>
+                    <input type="number" name="year" class="form-control" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Make</label>
+                    <input type="text" name="make" class="form-control" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Model</label>
+                    <input type="text" name="model" class="form-control" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">VIN</label>
+                    <input type="text" name="vin" class="form-control" required>
+                </div>
+            </div>
+            <h5 class="mt-3">Coverages</h5>
+            <table class="table table-sm coverages-table">
+                <thead>
+                    <tr>
+                        <th>Coverage</th>
+                        <th>Limit</th>
+                        <th>Premium</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dynamic coverages will be added here -->
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-outline-secondary btn-sm add-coverage-btn"><i class="bi bi-plus"></i> Add Coverage</button>
+        </div>
+    </div>
+</template>
+
+<!-- Template for a single coverage row -->
+<template id="coverage-template">
+    <tr class="coverage-row">
+        <td>
+            <select name="coverage-name" class="form-select form-select-sm">
+                <option value="LBI">LBI - Liability Bodily Injury</option>
+                <option value="LPD">LPD - Liability Property Damage</option>
+                <option value="UBI">UBI - Uninsured Bodily Injury</option>
+                <option value="UPD">UPD - Uninsured Property Damage</option>
+                <option value="MED">MED - Medical Payments</option>
+                <option value="COMP">COMP - Comprehensive</option>
+                <option value="COL">COL - Collision</option>
+                <option value="T&L">T&L - Towing & Labor</option>
+                <option value="R&R">R&R - Rental Reimbursement</option>
+            </select>
+        </td>
+        <td><input type="text" name="coverage-limit" class="form-control form-control-sm" placeholder="e.g., 100/300k or 500 Ded"></td>
+        <td>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text">$</span>
+                <input type="number" name="coverage-premium" class="form-control form-control-sm coverage-premium" step="0.01" value="0.00" required>
+            </div>
+        </td>
+        <td><button type="button" class="btn btn-outline-danger btn-sm remove-coverage-btn"><i class="bi bi-trash"></i></button></td>
+    </tr>
+</template>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const vehiclesContainer = document.getElementById('vehicles-container');
+    const addVehicleBtn = document.getElementById('add-vehicle-btn');
+    const vehicleTemplate = document.getElementById('vehicle-template');
+    const coverageTemplate = document.getElementById('coverage-template');
+    let vehicleCounter = 0;
+
+    function updateTotalPremium() {
+        let coverageTotal = 0;
+        document.querySelectorAll('.coverage-premium').forEach(input => {
+            const value = parseFloat(input.value);
+            if (!isNaN(value)) {
+                coverageTotal += value;
+            }
+        });
+
+        const premiumInput = document.getElementById('premium-amount-input');
+        premiumInput.value = coverageTotal.toFixed(2);
+
+        const agencyFeeInput = document.getElementById('agency-fee-input');
+        const agencyFee = parseFloat(agencyFeeInput.value) || 0;
+
+        const totalCustomerCost = coverageTotal + agencyFee;
+        document.getElementById('total-customer-cost').value = totalCustomerCost.toFixed(2);
+    }
+
+    function addVehicle() {
+        const vehicleClone = vehicleTemplate.content.cloneNode(true);
+        const vehicleCard = vehicleClone.querySelector('.vehicle-card');
+        
+        // Update names and IDs to be unique for this vehicle
+        vehicleCard.querySelectorAll('[name]').forEach(el => {
+            el.name = `vehicle-${vehicleCounter}-${el.getAttribute('name')}`;
+        });
+
+        vehiclesContainer.appendChild(vehicleClone);
+        vehicleCounter++;
+    }
+
+    function addCoverage(coverageTableBody, vehicleIndex) {
+        const coverageClone = coverageTemplate.content.cloneNode(true);
+        const coverageRow = coverageClone.querySelector('.coverage-row');
+        const coverageCounter = coverageTableBody.querySelectorAll('.coverage-row').length;
+
+        coverageRow.querySelectorAll('[name]').forEach(el => {
+            const originalName = el.getAttribute('name');
+            el.name = `vehicle-${vehicleIndex}-${originalName.replace('-', `-${coverageCounter}-`)}`;
+        });
+        
+        coverageTableBody.appendChild(coverageClone);
+        updateTotalPremium();
+    }
+
+    // Add the first vehicle automatically on page load
+    addVehicle();
+    updateTotalPremium(); // Initialize totals on page load
+
+    addVehicleBtn.addEventListener('click', addVehicle);
+
+    // Use event delegation for dynamically added elements
+    document.addEventListener('click', function(e) {
+        // Add Coverage
+        if (e.target && e.target.classList.contains('add-coverage-btn')) {
+            const vehicleCard = e.target.closest('.vehicle-card');
+            const coverageTableBody = vehicleCard.querySelector('.coverages-table tbody');
+            
+            // Find the vehicle index by looking at one of its named inputs
+            const vinInput = vehicleCard.querySelector('[name$="-vin"]');
+            const vehicleIndex = vinInput.name.split('-')[1];
+
+            addCoverage(coverageTableBody, vehicleIndex);
+        }
+
+        // Remove Coverage
+        if (e.target && (e.target.classList.contains('remove-coverage-btn') || e.target.closest('.remove-coverage-btn'))) {
+            const button = e.target.closest('.remove-coverage-btn');
+            button.closest('tr').remove();
+            updateTotalPremium();
+        }
+
+        // Remove Vehicle
+        if (e.target && e.target.classList.contains('remove-vehicle-btn')) {
+            e.target.closest('.vehicle-card').remove();
+            updateTotalPremium();
+        }
+    });
+
+    // Listen for changes in any premium input
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.classList.contains('coverage-premium')) {
+            updateTotalPremium();
+        }
+        // Also update when agency fee changes
+        if (e.target && e.target.id === 'agency-fee-input') {
+            updateTotalPremium();
+        }
+    });
+
+    // Re-index all form elements before submission to ensure sequential numbering
+    document.getElementById('auto-policy-form').addEventListener('submit', function(e) {
+        let currentVehicleIndex = 0;
+        document.querySelectorAll('.vehicle-card').forEach(vehicleCard => {
+            vehicleCard.querySelectorAll('[name^="vehicle-"]').forEach(el => {
+                const parts = el.name.split('-');
+                parts[1] = currentVehicleIndex; // Re-index vehicle
+                el.name = parts.join('-');
+            });
+
+            let currentCoverageIndex = 0;
+            vehicleCard.querySelectorAll('.coverage-row').forEach(coverageRow => {
+                coverageRow.querySelectorAll('[name^="vehicle-"]').forEach(el => {
+                    const parts = el.name.split('-');
+                    parts[3] = currentCoverageIndex; // Re-index coverage
+                    el.name = parts.join('-');
+                });
+                currentCoverageIndex++;
+            });
+            currentVehicleIndex++;
+        });
+    });
+});
+</script>
+{% endblock %}

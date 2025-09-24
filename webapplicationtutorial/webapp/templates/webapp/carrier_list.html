@@ -1,0 +1,105 @@
+{% extends 'webapp/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Carrier List and Search -->
+        <div class="col-md-7 mb-4">
+            <h2>Carriers</h2>
+            <div class="card">
+                <div class="card-body">
+                    <input type="text" id="carrierSearchInput" class="form-control mb-3" placeholder="Search carriers...">
+                    <div id="carrier-list-container" class="list-group">
+                        <!-- Carrier list populated by JS -->
+                    </div>
+                    <div id="no-results" class="text-center p-4" style="display: none;">
+                        <p>No carriers found.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add New Carrier Form -->
+        <div class="col-md-5">
+            <h2>Add New Carrier</h2>
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                {% if field.name == 'is_active' %}
+                                    <div class="form-check">
+                                        {{ field }}
+                                        <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    </div>
+                                {% else %}
+                                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                    {{ field }}
+                                {% endif %}
+                                {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                                {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-danger">Add Carrier</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('carrierSearchInput');
+    const listContainer = document.getElementById('carrier-list-container');
+    const noResultsDiv = document.getElementById('no-results');
+    let carriers = [];
+
+    function renderCarriers(carrierData) {
+        listContainer.innerHTML = '';
+        if (carrierData.length === 0) {
+            listContainer.innerHTML = '<p class="text-center text-muted">No matching carriers found.</p>';
+            return;
+        }
+        carrierData.forEach(carrier => {
+            const statusClass = carrier.is_active ? 'success' : 'secondary';
+            const statusText = carrier.is_active ? 'Active' : 'Inactive';
+            const carrierHtml = `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    ${carrier.name}
+                    <span class="badge rounded-pill bg-${statusClass}">${statusText}</span>
+                </div>
+            `;
+            listContainer.insertAdjacentHTML('beforeend', carrierHtml);
+        });
+    }
+
+    function fetchAndRender() {
+        fetch("{% url 'carrier_list' %}", {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            carriers = data;
+            if (carriers.length === 0) {
+                noResultsDiv.style.display = 'block';
+                searchInput.style.display = 'none';
+            } else {
+                noResultsDiv.style.display = 'none';
+                searchInput.style.display = 'block';
+                renderCarriers(carriers);
+            }
+        });
+    }
+
+    searchInput.addEventListener('keyup', function () {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filteredCarriers = carriers.filter(carrier => carrier.name.toLowerCase().includes(searchTerm));
+        renderCarriers(filteredCarriers);
+    });
+
+    fetchAndRender();
+});
+</script>
+{% endblock %}

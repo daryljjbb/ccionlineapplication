@@ -1,0 +1,193 @@
+{% extends 'webapp/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+     <!--
+          Developer notes: How data gets loaded when the Edit button is clicked
+
+          1) The view `edit_policy` (webapp.views) sets `policy_details_json` in the
+              template context: `json.dumps(policy.details)`.
+          2) This template uses `{{ policy_details_json|default:"{}"|safe }}` to
+              render a JSON string into the page. The JS below reads that JSON and
+              populates the form fields.
+          3) The JS expects specific input `name` attributes (e.g. 'property_address',
+              'dwelling_premium', 'dwelling_limit') and specific widget IDs
+              (`premium-amount-input`, `agency-fee-input`). Those names/IDs are
+              provided by the `PolicyForm` widgets and by the manual inputs in this
+              template. If you change the input names/IDs, update the JS accordingly.
+          4) On POST, the `edit_policy` view reads request.POST and reconstructs
+              `policy.details` from the submitted input names (see views.edit_policy).
+
+          So, to make the edit form load data:
+            - ensure the view includes `policy_details_json` in the context
+            - ensure the template renders it into JS: `JSON.parse('{{ policy_details_json|safe }}')`
+            - ensure the inputs' `name` attributes match what the JS and view expect
+     -->
+
+     <form method="post" id="home-policy-form">
+        {% csrf_token %}
+        <h3>Edit Homeowners Policy #{{ policy.policy_number }} for {{ customer }}</h3>
+        <hr>
+
+        <!-- General Policy Information -->
+        <div class="card mb-4">
+            <div class="card-header">General Policy Information</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">{{ form.carrier.label_tag }} {{ form.carrier }}</div>
+                    <div class="col-md-4 mb-3">{{ form.policy_number.label_tag }} {{ form.policy_number }}</div>
+                    <div class="col-md-4 mb-3">{{ form.status.label_tag }} {{ form.status }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">{{ form.effective_date.label_tag }} {{ form.effective_date }}</div>
+                    <div class="col-md-6 mb-3">{{ form.expiration_date.label_tag }} {{ form.expiration_date }}</div>
+                </div>
+                <div class="row justify-content-end">
+                    <div class="col-md-3 mb-3">
+                        <label for="premium-amount-input" class="form-label">Carrier Premium</label>
+                        <div class="input-group"><span class="input-group-text">$</span>{{ form.premium_amount }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        {{ form.agency_fee.label_tag }}
+                        <div class="input-group"><span class="input-group-text">$</span>{{ form.agency_fee }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="total-customer-cost" class="form-label">Total Customer Cost</label>
+                        <div class="input-group"><span class="input-group-text">$</span><input type="text" id="total-customer-cost" class="form-control" readonly></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Homeowners Details -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">Property Information</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="property_address" class="form-label">Property Address</label>
+                            <textarea name="property_address" id="property_address" class="form-control" rows="3">{{ policy.details.property_address|default:"" }}</textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6 mb-3">
+                                <label for="year_built" class="form-label">Year Built</label>
+                                <input type="number" name="year_built" id="year_built" class="form-control" value="{{ policy.details.year_built|default:"" }}">
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <label for="square_footage" class="form-label">Square Footage</label>
+                                <input type="number" name="square_footage" id="square_footage" class="form-control" value="{{ policy.details.square_footage|default:"" }}">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6 mb-3">
+                                <label for="deductible" class="form-label">All Peril Deductible</label>
+                                <input type="text" name="deductible" id="deductible" class="form-control" value="{{ policy.details.deductible|default:"" }}">
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <label for="wind_deductible" class="form-label">Wind/Hurricane Deductible</label>
+                                <input type="text" name="wind_deductible" id="wind_deductible" class="form-control" value="{{ policy.details.wind_deductible|default:"" }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">Coverages</div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <thead><tr><th>Coverage</th><th>Limit</th><th>Premium</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td>A - Dwelling</td>
+                                    <td><input type="text" name="dwelling_limit" class="form-control form-control-sm" value="{{ policy.details.coverages.dwelling.limit|default:"" }}"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="dwelling_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="{{ policy.details.coverages.dwelling.premium|default:"0.00" }}"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>B - Other Structures</td>
+                                    <td><input type="text" name="other_structures_limit" class="form-control form-control-sm" value="{{ policy.details.coverages.other_structures.limit|default:"" }}"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="other_structures_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="{{ policy.details.coverages.other_structures.premium|default:"0.00" }}"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>C - Personal Property</td>
+                                    <td><input type="text" name="personal_property_limit" class="form-control form-control-sm" value="{{ policy.details.coverages.personal_property.limit|default:"" }}"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="personal_property_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="{{ policy.details.coverages.personal_property.premium|default:"0.00" }}"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>D - Loss of Use</td>
+                                    <td><input type="text" name="loss_of_use_limit" class="form-control form-control-sm" value="{{ policy.details.coverages.loss_of_use.limit|default:"" }}"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="loss_of_use_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="{{ policy.details.coverages.loss_of_use.premium|default:"0.00" }}"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>E - Personal Liability</td>
+                                    <td><input type="text" name="personal_liability_limit" class="form-control form-control-sm" value="{{ policy.details.coverages.personal_liability.limit|default:"" }}"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="personal_liability_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="{{ policy.details.coverages.personal_liability.premium|default:"0.00" }}"></div></td>
+                                </tr>
+                                <tr>
+                                    <td>F - Medical Payments</td>
+                                    <td><input type="text" name="medical_payments_limit" class="form-control form-control-sm" value="{{ policy.details.coverages.medical_payments.limit|default:"" }}"></td>
+                                    <td><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="medical_payments_premium" class="form-control form-control-sm coverage-premium" step="0.01" value="{{ policy.details.coverages.medical_payments.premium|default:"0.00" }}"></div></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+            <a href="{% url 'policy_detail' policy.id %}" class="btn btn-secondary me-2">Cancel</a>
+            <button type="submit" class="btn btn-danger">Save Changes</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('home-policy-form');
+    const policyDetails = JSON.parse('{{ policy_details_json|default:"{}"|safe }}');
+    console.log("Policy Details for populating form:", policyDetails); // For debugging
+
+    function populateForm() {
+        if (!policyDetails || Object.keys(policyDetails).length === 0) return;
+
+        form.querySelector('[name="property_address"]').value = policyDetails.property_address || '';
+        form.querySelector('[name="year_built"]').value = policyDetails.year_built || '';
+        form.querySelector('[name="square_footage"]').value = policyDetails.square_footage || '';
+        form.querySelector('[name="deductible"]').value = policyDetails.deductible || '';
+        form.querySelector('[name="wind_deductible"]').value = policyDetails.wind_deductible || '';
+
+        if (policyDetails.coverages) {
+            for (const [key, value] of Object.entries(policyDetails.coverages)) {
+                const limitInput = form.querySelector(`[name="${key}_limit"]`);
+                const premiumInput = form.querySelector(`[name="${key}_premium"]`);
+                if (limitInput && value) limitInput.value = value.limit || '';
+                if (premiumInput && value) premiumInput.value = value.premium || '0.00';
+            }
+        }
+    }
+
+    function updateTotalPremium() {
+        let coverageTotal = 0;
+        form.querySelectorAll('.coverage-premium').forEach(input => {
+            const value = parseFloat(input.value);
+            if (!isNaN(value)) { coverageTotal += value; }
+        });
+
+        document.getElementById('premium-amount-input').value = coverageTotal.toFixed(2);
+        const agencyFee = parseFloat(document.getElementById('agency-fee-input').value) || 0;
+        document.getElementById('total-customer-cost').value = (coverageTotal + agencyFee).toFixed(2);
+    }
+
+    form.addEventListener('input', function(e) {
+        if (e.target && (e.target.classList.contains('coverage-premium') || e.target.id === 'agency-fee-input')) {
+            updateTotalPremium();
+        }
+    });
+
+    populateForm();
+    updateTotalPremium();
+});
+</script>
+{% endblock %}
