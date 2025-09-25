@@ -147,7 +147,13 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('home-policy-form');
-    const policyDetails = JSON.parse('{{ policy_details_json|default:"{}"|safe }}');
+    let policyDetails = {};
+    try {
+        policyDetails = JSON.parse('{{ policy_details_json|default:"{}"|safe }}');
+    } catch (err) {
+        console.error('Failed to parse policy_details_json:', err);
+        policyDetails = {};
+    }
     console.log("Policy Details for populating form:", policyDetails); // For debugging
 
     function populateForm() {
@@ -172,19 +178,28 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateTotalPremium() {
         let coverageTotal = 0;
         form.querySelectorAll('.coverage-premium').forEach(input => {
-            const value = parseFloat(input.value);
-            if (!isNaN(value)) { coverageTotal += value; }
+            // strip any non-numeric characters (commas, $) and coerce empty to 0
+            const raw = (input.value === undefined || input.value === null) ? '0' : String(input.value);
+            const num = parseFloat(raw.replace(/[^0-9.-]+/g, ''));
+            console.debug('coverage premium raw:', raw, 'parsed:', num);
+            if (!isNaN(num)) { coverageTotal += num; }
         });
 
-    document.getElementById('premium-amount-input').value = coverageTotal.toFixed(2);
-    const agencyFee = parseFloat(document.getElementById('agency-fee-input').value) || 0;
+    const premiumInput = document.getElementById('premium-amount-input');
+    if (premiumInput) premiumInput.value = coverageTotal.toFixed(2);
+    const agencyRaw = (() => {
+        const el = document.getElementById('agency-fee-input');
+        return el ? String(el.value || '0') : '0';
+    })();
+    const agencyFee = parseFloat(agencyRaw.replace(/[^0-9.-]+/g, '')) || 0;
+    console.debug('agency fee raw:', agencyRaw, 'parsed:', agencyFee, 'coverageTotal:', coverageTotal);
     const totalEl = document.getElementById('total-customer-cost');
-    const total = (coverageTotal + agencyFee);
+    const total = (coverageTotal + agencyFee) || 0;
     // format as currency with commas
     const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
     if (totalEl) totalEl.textContent = fmt.format(total);
     const hidden = document.getElementById('total-customer-cost-hidden');
-    if (hidden) hidden.value = total.toFixed(2);
+    if (hidden) hidden.value = Number(total).toFixed(2);
     }
 
     form.addEventListener('input', function(e) {
