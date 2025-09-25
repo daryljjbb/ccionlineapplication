@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="500">
+  <rect width="100%" height="100%" fill="#fffaf0"/>
+  <rect x="40" y="40" width="820" height="420" rx="8" fill="#ffffff" stroke="#f0e6cc"/>
+  <text x="70" y="90" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#2b2b2b">GitHub: Create PAT form (placeholder)</text>
+  <rect x="80" y="120" width="760" height="48" rx="6" fill="#fff3cd" stroke="#ffeeba"/>
+  <text x="100" y="150" font-family="Arial" font-size="14" fill="#6b4f00">Token name, expiration, scopes</text>
+  <rect x="80" y="200" width="200" height="36" rx="6" fill="#0366d6"/>
+  <text x="100" y="225" font-family="Arial" font-size="14" fill="#fff">Generate token</text>
+  <text x="70" y="270" font-family="Arial" font-size="12" fill="#333">Steps: Settings → Developer settings → Personal access tokens → Generate new token</text>
+</svg>

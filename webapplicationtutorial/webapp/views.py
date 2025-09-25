@@ -507,6 +507,18 @@ def edit_policy(request, policy_id):
                     'deductible': request.POST.get('deductible'),
                     'wind_deductible': request.POST.get('wind_deductible'),
                 }
+                # Parse and validate total_customer_cost (hidden field)
+                total_raw = request.POST.get('total_customer_cost')
+                if total_raw:
+                    # remove common formatting and convert to Decimal string
+                    from decimal import Decimal, InvalidOperation
+                    try:
+                        # accept values like '1234.56' (we expect hidden unformatted numeric string)
+                        total_val = Decimal(total_raw)
+                        home_details['total_customer_cost'] = str(total_val)
+                    except (InvalidOperation, ValueError):
+                        # if parsing fails, don't overwrite existing value; log or set to None
+                        home_details['total_customer_cost'] = None
                 details.update(home_details)
 
             policy_instance.details = details

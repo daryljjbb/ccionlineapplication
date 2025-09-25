@@ -53,7 +53,8 @@
                     </div>
                     <div class="col-md-3 mb-3">
                         <label for="total-customer-cost" class="form-label">Total Customer Cost</label>
-                        <div class="input-group"><span class="input-group-text">$</span><input type="text" id="total-customer-cost" class="form-control" readonly></div>
+                        <div class="input-group"><span class="input-group-text">$</span><p id="total-customer-cost" class="form-control-plaintext d-inline-block text-muted mb-0">0.00</p></div>
+                        <input type="hidden" name="total_customer_cost" id="total-customer-cost-hidden" value="0.00">
                     </div>
                 </div>
             </div>
@@ -175,9 +176,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!isNaN(value)) { coverageTotal += value; }
         });
 
-        document.getElementById('premium-amount-input').value = coverageTotal.toFixed(2);
-        const agencyFee = parseFloat(document.getElementById('agency-fee-input').value) || 0;
-        document.getElementById('total-customer-cost').value = (coverageTotal + agencyFee).toFixed(2);
+    document.getElementById('premium-amount-input').value = coverageTotal.toFixed(2);
+    const agencyFee = parseFloat(document.getElementById('agency-fee-input').value) || 0;
+    const totalEl = document.getElementById('total-customer-cost');
+    const total = (coverageTotal + agencyFee);
+    // format as currency with commas
+    const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+    if (totalEl) totalEl.textContent = fmt.format(total);
+    const hidden = document.getElementById('total-customer-cost-hidden');
+    if (hidden) hidden.value = total.toFixed(2);
     }
 
     form.addEventListener('input', function(e) {

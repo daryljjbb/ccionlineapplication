@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 import os
 from django.contrib.auth.models import User
+from decimal import Decimal, InvalidOperation
 
 
 class Agency(models.Model):
@@ -100,3 +101,30 @@ class Policy(models.Model):
 
     def __str__(self):
         return f"Policy {self.policy_number} for {self.customer}"
+
+    @property
+    def total_customer_cost(self):
+        """Return total_customer_cost as Decimal if present in details, else None."""
+        raw = self.details.get('total_customer_cost') if isinstance(self.details, dict) else None
+        if raw in (None, ''):
+            return None
+        try:
+            return Decimal(str(raw))
+        except (InvalidOperation, ValueError):
+            return None
+
+    @total_customer_cost.setter
+    def total_customer_cost(self, value):
+        """Set total_customer_cost in details JSON. Accept Decimal or numeric/string."""
+        if not isinstance(self.details, dict):
+            self.details = {}
+        if value is None:
+            self.details['total_customer_cost'] = None
+            return
+        try:
+            dec = Decimal(value)
+            # store as string to keep JSON serialization predictable
+            self.details['total_customer_cost'] = str(dec)
+        except (InvalidOperation, ValueError):
+            # on invalid input, store None
+            self.details['total_customer_cost'] = None
