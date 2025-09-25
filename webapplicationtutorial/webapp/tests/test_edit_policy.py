@@ -74,6 +74,7 @@ class EditPolicyViewTests(TestCase):
             'medical_payments_premium': '0.00',
             'deductible': '1500',
             'wind_deductible': '2500',
+            'total_customer_cost': '660.00',
         }
 
         response = self.client.post(url, data=post_data, follow=True)
@@ -84,7 +85,9 @@ class EditPolicyViewTests(TestCase):
         self.assertEqual(str(self.policy.details.get('year_built')), '2000')
         self.assertIn('coverages', self.policy.details)
         self.assertEqual(self.policy.details['coverages']['dwelling']['premium'], '600.00')
-
+        # total_customer_cost should be saved (stringified Decimal)
+        self.assertEqual(self.policy.details.get('total_customer_cost'), '660.00')
+        
 
 class ReplaceFilterTests(TestCase):
     def test_replace_filter_safe(self):
@@ -93,3 +96,31 @@ class ReplaceFilterTests(TestCase):
         rendered = t.render(Context())
         # The filter replaces '_' with ' ' when given '_, ' so expect 'a b'
         self.assertIn('a b', rendered)
+
+
+class PolicyTotalTests(TestCase):
+    def test_total_customer_cost_property(self):
+        from decimal import Decimal
+        customer = Customer.objects.create(first_name='Jane', last_name='Smith', email='jane@example.com')
+        carrier = Carrier.objects.create(name='ACME2', is_active=True)
+        policy = Policy.objects.create(
+            customer=customer,
+            carrier=carrier,
+            policy_number='P-200',
+            policy_type='home',
+            effective_date='2024-01-01',
+            expiration_date='2025-01-01',
+            premium_amount=100.00,
+            agency_fee=10.00,
+            status='active',
+        )
+        # setter accepts Decimal and stores string in details
+        policy.total_customer_cost = Decimal('110.00')
+        policy.save()
+        policy.refresh_from_db()
+        self.assertEqual(str(policy.total_customer_cost), '110.00')
+        # set None clears it
+        policy.total_customer_cost = None
+        policy.save()
+        policy.refresh_from_db()
+        self.assertIsNone(policy.total_customer_cost)
