@@ -53,7 +53,10 @@
                     </div>
                     <div class="col-md-3 mb-3">
                         <label for="total-customer-cost" class="form-label">Total Customer Cost</label>
-                        <div class="input-group"><span class="input-group-text">$</span><p id="total-customer-cost" class="form-control-plaintext d-inline-block text-muted mb-0">0.00</p></div>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" id="total-customer-cost" class="form-control" value="0.00" readonly aria-readonly="true" />
+                        </div>
                         <input type="hidden" name="total_customer_cost" id="total-customer-cost-hidden" value="0.00">
                     </div>
                 </div>
